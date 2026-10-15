@@ -61,9 +61,11 @@ def on_wave_start(wave):
 
 
 
+
 def shield_charges(wave):
-    """Return how many hits the player's shield can absorb this wave, or None to disable the shield."""
-    pass
+    """Grant one shield charge every third wave."""
+    return 1 if wave > 0 and wave % 3 == 0 else 0
+
 
 
 ENEMY_COLORS = {"boss": (90, 220, 90), "red": (230, 70, 70), "blue": (80, 140, 240)}
@@ -110,16 +112,21 @@ class Enemy:
         self.pos = bezier(*self.path, self.t)
 
 
-def spawn_wave(wave):
+
+def spawn_wave(wave, game):
     enemies, index = [], 0
     layout = [("boss", 4, 90), ("red", 8, 130), ("red", 8, 170), ("blue", 8, 210)]
+
     for kind, count, y in layout:
         for i in range(count):
             x = WIDTH / 2 + (i - (count - 1) / 2) * 52
             enemies.append(Enemy(kind, (x, y), index, index % 2 == 0))
             index += 1
+
+    game.shield = shield_charges(wave)
     on_wave_start(wave)
     return enemies
+
 
 
 class Game:
@@ -132,8 +139,7 @@ class Game:
         self.score, self.wave, self.time = 0, 1, 0.0
         self.bullets, self.shots = [], []
         self.cooldown, self.invulnerable, self.dive_timer = 0.0, 0.0, 3.0
-        self.enemies = spawn_wave(self.wave)
-        self.shield = shield_charges(self.wave) or 0
+        self.enemies = spawn_wave(self.wave, self)
         self.state = "play"
 
     def ship_xs(self):
@@ -196,9 +202,7 @@ class Game:
         self.update_projectiles(dt)
         if not self.enemies:
             self.wave += 1
-            self.enemies = spawn_wave(self.wave)
-            self.shield = shield_charges(self.wave) or 0
-
+            self.enemies = spawn_wave(self.wave, self)
     def update_projectiles(self, dt):
         for bullet in self.bullets[:]:
             bullet.y -= 520 * dt
