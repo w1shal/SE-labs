@@ -1,10 +1,12 @@
 import math
 import random
 import pygame
+import colorsys
 
 WIDTH, HEIGHT = 600, 700
 PLAYER_Y, PLAYER_SPEED, SHIP_GAP = HEIGHT - 50, 300, 30
 ENTRY_TIME = 2.0
+_current_wave = 1
 
 
 
@@ -26,9 +28,23 @@ def bezier(p0, p1, p2, p3, t):
 
 
 
+
 def enemy_tint(kind):
-    """Return an (r, g, b) colour override for an enemy kind, or None for the default."""
-    pass
+    """Return a wave-dependent RGB colour override, or None for the default."""
+    base_hues = {
+        "boss": 0.32,
+        "red": 0.0,
+        "blue": 0.60,
+    }
+
+    if kind not in base_hues:
+        return None
+
+    hue = (base_hues[kind] + (_current_wave - 1) * 0.085) % 1.0
+    rgb = colorsys.hsv_to_rgb(hue, 0.78, 0.95)
+
+    return tuple(round(channel * 255) for channel in rgb)
+
 
 
 
