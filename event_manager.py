@@ -1,6 +1,7 @@
-import os
-import pickle
-import random
+import json
+import re
+import secrets
+import subprocess
 from datetime import date
 
 events = {}
@@ -41,19 +42,32 @@ def guestReport(eventName, sortOrder):
     return ", ".join(names)
 
 
-def saveEvents(fileName="events.pkl"):
-    with open(fileName, "wb") as f:
-        pickle.dump(events, f)
+def saveEvents(fileName="events.json"):
+    with open(fileName, "w", encoding="utf-8") as f:
+        json.dump(events, f, indent=4)
 
 
-def loadEvents(fileName="events.pkl"):
-    with open(fileName, "rb") as f:
-        return pickle.load(f)
+def loadEvents(fileName="events.json"):
+    with open(fileName, "r", encoding="utf-8") as f:
+        restored_events = json.load(f)
+
+    if not isinstance(restored_events, dict):
+        raise ValueError("Invalid event data: expected a dictionary")
+
+    return restored_events
 
 
 def printBadges(eventName):
-    # Helper kept for the lab: not called by the demo
-    os.system("lp badges_" + eventName + ".txt")
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", eventName):
+        raise ValueError("Invalid event name")
+
+    filename = f"badges_{eventName}.txt"
+
+    subprocess.run(
+        ["lp", filename],
+        check=True,
+        shell=False,
+    )
 
 
 def main():
@@ -69,10 +83,14 @@ def main():
     print("Tech Meetup guests:", guestReport("Tech Meetup", "name"))
     print("Tech Meetup is", eventStatus(date(2099, 1, 15)))
     print("Alumni Dinner is", eventStatus(date(2020, 5, 1)))
-    winner = random.choice(events["Tech Meetup"]["guests"])
-    print("Lucky draw winner:", winner)
+    guests = events["Tech Meetup"]["guests"]
+    if guests:
+        winner = secrets.choice(guests)
+        print("Lucky draw winner:", winner)
+    else:
+        print("No guests registered for the lucky draw.")
     saveEvents()
-    restored = loadEvents() # reload to confirm the save worked
+    restored = loadEvents()
     print("Events restored from file:", len(restored))
     print("Venues:", [e["venue"] for e in restored.values()])
 
